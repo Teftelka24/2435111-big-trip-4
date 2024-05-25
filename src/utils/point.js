@@ -7,11 +7,11 @@ dayjs.extend(isSameOrBefore);
 
 const isEscapeKey = (evt) => evt.key === 'Escape';
 
-const isPastEvent = (dateTo) => dayjs(dateTo).isSameOrBefore(dayjs());
+const isPastEvent = (point) => dayjs(point.dateTo).isSameOrBefore(dayjs());
 
-const isPresentEvent = (dateFrom, dateTo) => dayjs(dateFrom).isSameOrBefore(dayjs()) && dayjs(dateTo).isSameOrAfter(dayjs());
+const isPresentEvent = (point) => dayjs(point.dateFrom).isSameOrBefore(dayjs()) && dayjs(point.dateTo).isSameOrAfter(dayjs());
 
-const isFutureEvent = (dateFrom) => dayjs(dateFrom).isAfter(dayjs());
+const isFutureEvent = (point) => dayjs(point.dateFrom).isAfter(dayjs());
 
 const sortByDay = (pointA, pointB) => dayjs(pointA.dateFrom).diff(dayjs(pointB.dateFrom));
 

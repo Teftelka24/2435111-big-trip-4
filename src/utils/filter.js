@@ -3,9 +3,9 @@ import { isFutureEvent, isPastEvent, isPresentEvent } from './point.js';
 
 const filter = {
   [FilterType.EVERYTHING]: (points) => points,
-  [FilterType.FUTURE]: (points) => points.filter((point) => isFutureEvent(point.dateFrom)),
-  [FilterType.PRESENT]: (points) => points.filter((point) => isPresentEvent(point.dateFrom, point.dateTo)),
-  [FilterType.PAST]: (points) => points.filter((point) => isPastEvent(point.dateTo))
+  [FilterType.FUTURE]: (points) => points.filter(isFutureEvent),
+  [FilterType.PRESENT]: (points) => points.filter(isPresentEvent),
+  [FilterType.PAST]: (points) => points.filter(isPastEvent)
 };
 
 export { filter };

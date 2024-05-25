@@ -1,11 +1,11 @@
 import PointListMessageView from '../view/point-list-empty-message-view.js';
 import PointListView from '../view/point-list-view.js';
-import { render, RenderPosition } from '../framework/render.js';
+import { remove, render, RenderPosition } from '../framework/render.js';
 import PointPresenter from './point-presenter.js';
 import SortView from '../view/sort-view.js';
 import { updateItem } from '../utils/common.js';
-import { SortType } from '../const.js';
-import { sortByDay, sortByTime, sortByPrice } from '../utils/point.js';
+import { FilterType, SortType } from '../const.js';
+import { sortByDay, sortByTime, sortByPrice, isPastEvent, isPresentEvent, isFutureEvent } from '../utils/point.js';
 import FilterView from '../view/filter-view.js';
 import { generateFilter } from '../mock/filter.js';
 
@@ -17,11 +17,13 @@ export default class ListPresenter {
   #listComponent = new PointListView();
   #sortComponent = null;
   #filtersComponent = null;
-  #listMessageComponent = new PointListMessageView();
+  #listMessageComponent = null;
 
   #listPoints = [];
   #pointPresenter = new Map();
   #currentSortType = SortType.DAY;
+  #currentFilterType = FilterType.EVERYTHING;
+  #filteredPoints = [];
 
   constructor({ listContainer, filtersContainer, pointsModel }) {
     this.#listContainer = listContainer;
@@ -31,6 +33,7 @@ export default class ListPresenter {
 
   init() {
     this.#listPoints = [...this.#pointsModel.points];
+    this.#filteredPoints = [...this.#pointsModel.points];
 
     this.#renderBoard();
   }
@@ -47,7 +50,10 @@ export default class ListPresenter {
 
   #handlePointChange = (updatedPoint) => {
     this.#listPoints = updateItem(this.#listPoints, updatedPoint);
+    this.#filteredPoints = updateItem(this.#filteredPoints, updatedPoint);
     this.#pointPresenter.get(updatedPoint.id).init(updatedPoint);
+    this.#clearPointList();
+    this.#renderList();
   };
 
   #handleModeChange = () => {
@@ -64,11 +70,42 @@ export default class ListPresenter {
     this.#renderList();
   };
 
+  #handleFilterTypeChange = (filterType) => {
+    if (this.#currentFilterType === filterType) {
+      return;
+    }
+
+    this.#filterPoints(filterType);
+    this.#clearPointList();
+    this.#renderList();
+  };
+
   #renderFilters() {
     const filters = generateFilter(this.#listPoints);
-    this.#filtersComponent = new FilterView({ filters });
+    this.#filtersComponent = new FilterView({
+      filters,
+      onFilterChange: this.#handleFilterTypeChange
+    });
 
     render(this.#filtersComponent, this.#filtersContainer);
+  }
+
+  #filterPoints(filterType) {
+    switch (filterType) {
+      case FilterType.PAST:
+        this.#listPoints = this.#filteredPoints.filter(isPastEvent);
+        break;
+      case FilterType.PRESENT:
+        this.#listPoints = this.#filteredPoints.filter(isPresentEvent);
+        break;
+      case FilterType.FUTURE:
+        this.#listPoints = this.#filteredPoints.filter(isFutureEvent);
+        break;
+      default:
+        this.#listPoints = this.#filteredPoints;
+    }
+
+    this.#currentFilterType = filterType;
   }
 
   #sortPoints(sortType) {
@@ -95,7 +132,11 @@ export default class ListPresenter {
   }
 
   #renderListMessage() {
-    render(this.#listMessageComponent, this.#listComponent.element);
+    this.#listMessageComponent = new PointListMessageView(this.#currentFilterType);
+
+    if (!this.#listPoints.length) {
+      render(this.#listMessageComponent, this.#listComponent.element);
+    }
   }
 
   #clearPointList() {
@@ -106,7 +147,10 @@ export default class ListPresenter {
   #renderList() {
     render(this.#listComponent, this.#listContainer);
 
+    this.#filterPoints(this.#currentFilterType);
+
     if (this.#listPoints.length) {
+      remove(this.#listMessageComponent);
       this.#sortPoints(this.#currentSortType);
       for (let i = 0; i < this.#listPoints.length; i++) {
         this.#renderPoint(this.#listPoints[i]);
